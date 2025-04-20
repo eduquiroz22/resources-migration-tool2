@@ -128,7 +128,7 @@ All with auto strategy implemented uses `stream-json` (batch) for files larger t
 
   > ⚙️ **Why Auto Strategy?**
 >
-> For models that involve large datasets (`member-profiles`, `member-stats`, and `resources`), the tool implements an **automatic selection strategy** based on file size:
+> For models that involve large datasets (`audit-logs` or `challenges`), the tool implements an **automatic selection strategy** based on file size:
 > - If the input file is **larger than 3 MB**, the migration runs in **batch mode using streaming (e.g., `stream-json` or `readline`)** to reduce memory usage.
 > - For **smaller files**, it defaults to **simple in-memory processing** (`loadJSON`) for faster performance.
 >
