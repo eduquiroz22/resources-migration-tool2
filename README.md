@@ -134,11 +134,11 @@ By default, many submodels like `ChallengePrizeSet` and `Prize` use generated UU
 is added in the Prisma schema. We suggest Topcoder adopts this pattern to enable reliable upserts for:
 
 - `ChallengeMetadata`
--  ChallengePrizeSet
--  Prize
--  ChallengeWinner
--  ChallengeTerm
--  ChallengeSkill
+-  `ChallengePrizeSet`
+-  `Prize`
+-  `ChallengeWinner`
+-  `ChallengeTerm`
+-  `ChallengeSkill`
 - `ChallengeBilling`
 - `ChallengeDiscussion`
 - `ChallengeDiscussionOption`
