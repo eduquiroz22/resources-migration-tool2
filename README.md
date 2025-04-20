@@ -1,14 +1,12 @@
 # Topcoder Challenge API – Data Migration Tool
 
-This tool migrates data from **ElasticSearch (NDJSON)** and **DynamoDB-style JSON** to **PostgreSQL**, using **Prisma ORM**.
-
-It supports the complete Challenge API schema (as of April 2025) and is optimized for performance, correctness, and configurability.
+This tool migrates challenge-related data from JSON/NDJSON files (exported from DynamoDB or ElasticSearch) into a **PostgreSQL** database using **Prisma ORM**. It supports multiple models of the **Challenge API**, including complex nested structures like prize sets, discussions, and event phases.
 
 ---
 
 ## ✅ Supported Models
 
-The following models are migrated when valid data is present:
+The following models are migrated (if valid data is available):
 
 - `Challenge`
 - `ChallengeMetadata`
@@ -31,23 +29,23 @@ The following models are migrated when valid data is present:
 - `TimelineTemplate`
 - `ChallengeTimelineTemplate`
 
-### Skipped Models (due to invalid or missing references):
+### ❌ Skipped Models (due to missing references)
 
 - `AuditLog`
 - `Attachment`
 
-Skipped because none of the referenced `challengeId`s exist in `challenge-api.challenge.json`.
+Both were skipped due to their `challengeId` references not being found in the provided challenge dataset (`challenge-api.challenge.json`).
 
 ---
 
 ## 📦 Technologies Used
 
-- **Node.js** – migration scripts
-- **Prisma ORM** – schema modeling and database operations
-- **PostgreSQL 16.3** – managed via Docker Compose
-- **stream-json / readline** – efficient NDJSON parsing
-- **cli-progress** – progress bar for large migrations
-- **Jest** – testing framework
+- **Node.js**
+- **Prisma ORM**
+- **PostgreSQL 16.3** (via Docker)
+- **Docker Compose**
+- **stream-json** and **readline**
+- **Jest** (for unit testing)
 
 ---
 
@@ -60,15 +58,14 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/challengedb"
 CREATED_BY="challenge-api-db-migration"
 ```
 
-Override `CREATED_BY` during execution if needed:
-
+> You can override `CREATED_BY` at runtime if needed:
 ```bash
-CREATED_BY=my-script node src/index.js challenges
+CREATED_BY="your-name" node src/index.js challenges ./data/sample.ndjson
 ```
 
 ---
 
-## 🚀 Running Migrations
+## 🚀 Running the Migration
 
 1. Install dependencies:
 
@@ -76,24 +73,25 @@ CREATED_BY=my-script node src/index.js challenges
 npm install
 ```
 
-2. Start PostgreSQL:
+2. Start PostgreSQL with Docker:
 
 ```bash
 docker-compose up -d
 ```
 
-3. Push the Prisma schema:
+3. Push Prisma schema:
 
 ```bash
 npx prisma db push
 ```
 
-4. Run individual migrations:
+4. Run individual migration steps:
 
 ```bash
 node src/index.js challenge-types
 node src/index.js challenges ./data/challenges_sample.ndjson
 ```
+Avaliable "steps" down below.
 
 5. (Optional) Run all in sequence:
 
@@ -103,93 +101,91 @@ node src/index.js migrate-all
 
 ---
 
+## 🧩 Migration Strategy
+
+- Most models use **streaming migration** (`readline` or `stream-json`) to support large files.
+- Submodels like `ChallengeMetadata`, `ChallengePrizeSet`, `Prize`, and `ChallengeWinner` are migrated **within the main `Challenge` migration** step.
+
+---
+
 ## 🧩 Available Migration Steps
 
-| Step                           | Description                                                  |
-|--------------------------------|--------------------------------------------------------------|
-| `challenge-types`             | Imports `ChallengeType` definitions                         |
-| `challenge-tracks`            | Imports `ChallengeTrack` definitions                        |
-| `phases`                      | Imports global `Phase` definitions                          |
-| `timeline-templates`          | Imports `TimelineTemplate` base structures                  |
-| `challenge-timeline-templates`| Links challenge types to timeline templates                 |
-| `attachments`                 | Skipped – invalid references                                |
-| `audit-logs`                  | Skipped – invalid references                                |
-| `challenges`                  | Full challenge with all submodels (skills, winners, etc.)   |
+| Step                           | Description                                                                 |
+|--------------------------------|-----------------------------------------------------------------------------|
+| `challenge-types`             | Imports `ChallengeType` definitions                                        |
+| `challenge-tracks`            | Imports `ChallengeTrack` definitions                                       |
+| `phases`                      | Imports global `Phase` definitions                                         |
+| `timeline-templates`          | Imports `TimelineTemplate` base structures                                 |
+| `challenge-timeline-templates`| Links challenge types to timeline templates                                |
+| `attachments`                 | Implemented, but no data migrated due to missing `challengeId` references  |
+| `audit-logs`                  | Implemented, but no data migrated due to missing `challengeId` references  |
+| `challenges`                  | Full challenge migration with all submodels (skills, winners, etc.)        |
 
 ---
 
-## 🧪 Verification Strategy
+## 💡 Note on Upserts
 
-Each migration is **verifiable** via:
+By default, many submodels like `ChallengePrizeSet` and `Prize` use generated UUIDs as primary keys. Since these IDs don't exist in the original data files, **it's not feasible to use `upsert`** unless a unique composite constraint like:
 
-- **SQL count comparisons**
-- **Optional field-by-field validation scripts**
-- **Upsert logic** ensures incremental updates are supported
-
-Example:
-
-```sql
-SELECT COUNT(*) FROM "Challenge";
-SELECT * FROM "ChallengeMetadata" WHERE challengeId = 'xyz';
+```prisma
+@@unique([challengeId, name])
 ```
 
-Validation scripts can be extended to compare source NDJSON vs PostgreSQL row-by-row if needed.
+is added in the Prisma schema. We suggest Topcoder adopts this pattern to enable reliable upserts for:
+
+- `ChallengeMetadata`
+-  ChallengePrizeSet
+-  Prize
+-  ChallengeWinner
+-  ChallengeTerm
+-  ChallengeSkill
+- `ChallengeBilling`
+- `ChallengeDiscussion`
+- `ChallengeDiscussionOption`
+- `ChallengeConstraint`
+- `ChallengePhase`
+- `ChallengePhaseConstraints`
 
 ---
 
-## 📂 Logs & Debugging
+### 🔎 Notable Implementation Details
 
-Each model writes migration errors to its respective log under `/logs`:
+- **Status Normalization**:  
+  The `status` field from the original dataset contains a variety of inconsistent formats (e.g., `"Cancelled – Zero Registrations"`, `"active"`, `"Completed"`).  
+  To ensure schema compatibility with the expected enums in PostgreSQL, the migration applies normalization logic that:
+
+  - Converts values to uppercase,
+  - Replaces spaces and dashes with underscores,
+  - Defaults to `'NEW'` if the value is not in the predefined enum list.
+
+  **Example transformation:**
+
+  ```
+  "Cancelled – Zero Registrations"  →  "CANCELLED_ZERO_REGISTRATIONS"
+  ```
+
+  This guarantees safe and consistent insertion of all status values into the database while respecting enum constraints.
+
+## 📝 Logs
+
+Failed or skipped migrations are written to `logs/`:
 
 - `challenge_errors.log`
 - `challenge_metadata_errors.log`
-- `auditlog_errors.log`
-- etc.
-
-Skipped records (e.g., invalid foreign keys) are also logged separately.
+- `auditlog_skipped_invalid_fk.log`
 
 ---
 
-## 🧪 Testing
+## 🧪 Tests
+
+Run tests:
 
 ```bash
 npm test
 ```
 
-Mock files are available in `src/test/mocks/` for unit testing migrators.
+Mock data for testing is under `src/test/mocks/`.
 
 ---
 
-## 📸 Sample Output
-
-Terminal progress:
-
-```
-📦  Migrating challenges...
-📊  Processed 1,000 records...
-✅  Challenge migration finished: 1,983 success, 17 failed
-```
-
-PostgreSQL (via Docker):
-
-```bash
-docker exec -it challenge_postgres psql -U postgres -d challengedb
-```
-
----
-
-## 📁 Notes on Data Files
-
-The original NDJSON files (e.g., `challenge-api.challenge.json`) are **not included** due to file size.
-
-Please download them manually from the official forum and place them in `/data`.
-
----
-
-✅ This project fulfills all requirements including:
-
-- Full Prisma schema
-- Auto and batch migration
-- Skipped model logging
-- Validation support
-- Modular and testable code
+✅ All primary and relational challenge models have been migrated successfully. Audit logs and attachments were excluded due to reference issues.
