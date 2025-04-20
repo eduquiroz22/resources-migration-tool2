@@ -110,16 +110,17 @@ node src/index.js migrate-all
 
 ## 🧩 Available Migration Steps
 
-| Step                           | Description                                                                 |
-|--------------------------------|-----------------------------------------------------------------------------|
-| `challenge-types`             | Imports `ChallengeType` definitions                                        |
-| `challenge-tracks`            | Imports `ChallengeTrack` definitions                                       |
-| `phases`                      | Imports global `Phase` definitions                                         |
-| `timeline-templates`          | Imports `TimelineTemplate` base structures                                 |
-| `challenge-timeline-templates`| Links challenge types to timeline templates                                |
-| `attachments`                 | Implemented, but no data migrated due to missing `challengeId` references  |
-| `audit-logs`                  | Implemented, but no data migrated due to missing `challengeId` references  |
-| `challenges`                  | Full challenge migration with all submodels (skills, winners, etc.)        |
+| Step                           | Description                                                                 | Default File Path                                       |
+|--------------------------------|-----------------------------------------------------------------------------|----------------------------------------------------------|
+| `challenge-types`             | Imports `ChallengeType` definitions                                        | `./data/ChallengeType_dynamo_data.json`                 |
+| `challenge-tracks`            | Imports `ChallengeTrack` definitions                                       | `./data/ChallengeTrack_dynamo_data.json`               |
+| `phases`                      | Imports global `Phase` definitions                                         | `./data/Phase_dynamo_data.json`                         |
+| `timeline-templates`          | Imports `TimelineTemplate` base structures and associated phases           | `./data/TimelineTemplate_dynamo_data.json`              |
+| `challenge-timeline-templates`| Links challenge types to timeline templates                                | `./data/ChallengeTimelineTemplate_dynamo_data.json`     |
+| `attachments`                 | Implemented, but no data migrated due to missing `challengeId` references  | `./data/Attachment_dynamo_data.json`                    |
+| `audit-logs`                  | Implemented, but no data migrated due to missing `challengeId` references  | `./data/AuditLog_dynamo_data.json`                      |
+| `challenges`                  | Full challenge migration with all submodels (skills, winners, etc.)        | `./data/challenge-api.challenge.json`                   |
+
 
 All with auto strategy implemented uses `stream-json` (batch) for files larger than 3MB, and `loadJSON` (simple) otherwise.
 
@@ -143,7 +144,7 @@ All with auto strategy implemented uses `stream-json` (batch) for files larger t
   | `member-stats`                     | `./data/MemberStats_dynamo_data.json`                         |
   | `resource-roles`                   | `./data/ResourceRole_dynamo_data.json`                        |
   | `resource-role-phase-dependencies` | `./data/ResourceRolePhaseDependency_dynamo_data.json`         |
-  | `resources`                        | `./data/Resource_data.json` ← requires NDJSON format          |
+  | `resources`                        | `./data/Resource_data.json         |
   | `challenge-types`             | `./data/ChallengeType_dynamo_data.json`                                       |
   | `challenge-tracks`            | `./data/ChallengeTrack_dynamo_data.json`                                       |
   | `phases`                      | `./data/Phase_dynamo_data.json`                                         |
