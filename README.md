@@ -176,6 +176,7 @@ is added in the Prisma schema. We suggest Topcoder adopts this pattern to enable
   ```
 
   This guarantees safe and consistent insertion of all status values into the database while respecting enum constraints.
+---
 
 ## ✅ Validate
 
@@ -199,9 +200,9 @@ node scripts/validateChallenges.js ./data/challenge-api.challenge.json
 
 Failed or skipped migrations are written to `logs/`:
 
+- `challenge_billing_errors.log`
 - `challenge_errors.log`
-- `challenge_metadata_errors.log`
-- `auditlog_skipped_invalid_fk.log`
+- `challengetimelinetemplate_errors.log`
 
 ---
 
