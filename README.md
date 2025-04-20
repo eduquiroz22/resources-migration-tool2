@@ -96,7 +96,7 @@ Avaliable "steps" down below.
 5. (Optional) Run all in sequence:
 
 ```bash
-node src/index.js migrate-all
+node src/migrateAll.js
 ```
 
 ---
@@ -121,6 +121,8 @@ node src/index.js migrate-all
 | `audit-logs`                  | Implemented, but no data migrated due to missing `challengeId` references  | `./data/AuditLog_dynamo_data.json`                      |
 | `challenges`                  | Full challenge migration with all submodels (skills, winners, etc.)        | `./data/challenge-api.challenge.json`                   |
 
+> ⚙️ Note: `attachments` and `audit-logs` are implemented but commented out by default in `migrateAll.js` due to invalid foreign key references.
+> You can uncomment them for future use if the data gets updated with valid challenge references.
 
 All with auto strategy implemented uses `stream-json` (batch) for files larger than 3MB, and `loadJSON` (simple) otherwise.
 
