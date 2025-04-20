@@ -190,7 +190,7 @@ Run with:
 
 ```bash
 node scripts/validateChallenges.js ./data/challenge-api.challenge.json
-
+```
 ---
 
 ## 📝 Logs
