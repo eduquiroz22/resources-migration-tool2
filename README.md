@@ -132,28 +132,6 @@ All with auto strategy implemented uses `stream-json` (batch) for files larger t
 >
 > This approach ensures optimal balance between **efficiency** and **stability**, especially when working with hundreds of thousands of records (e.g., over 850,000 for MemberProfile).
 
----
-
-  ### 📁 Default Input Files per Migration Step
-  
-  The following files are used by default for each step, unless a custom path is provided via the CLI:
-  
-  | Step                                | Default File Path                                             |
-  |-------------------------------------|----------------------------------------------------------------|
-  | `member-profiles`                  | `./data/MemberProfile_dynamo_data.json`                       |
-  | `member-stats`                     | `./data/MemberStats_dynamo_data.json`                         |
-  | `resource-roles`                   | `./data/ResourceRole_dynamo_data.json`                        |
-  | `resource-role-phase-dependencies` | `./data/ResourceRolePhaseDependency_dynamo_data.json`         |
-  | `resources`                        | `./data/Resource_data.json         |
-  | `challenge-types`             | `./data/ChallengeType_dynamo_data.json`                                       |
-  | `challenge-tracks`            | `./data/ChallengeTrack_dynamo_data.json`                                       |
-  | `phases`                      | `./data/Phase_dynamo_data.json`                                         |
-  | `timeline-templates`          | `./data/TimelineTemplate_dynamo_data.json`                                 |
-  | `challenge-timeline-templates`| `./data/ChallengeTimelineTemplate_dynamo_data.json`                                |
-  | `attachments`                 | `./data/Attachment_dynamo_data.json`  |
-  | `audit-logs`                  | `./data/AuditLog_dynamo_data.json`  |
-  | `challenges`                  | `./data/challenge-api.challenge.json`       |
-
 ## 💡 Note on Upserts
 
 By default, many submodels like `ChallengePrizeSet` and `Prize` use generated UUIDs as primary keys. Since these IDs don't exist in the original data files, **it's not feasible to use `upsert`** unless a unique composite constraint like:
@@ -196,6 +174,24 @@ is added in the Prisma schema. We suggest Topcoder adopts this pattern to enable
   ```
 
   This guarantees safe and consistent insertion of all status values into the database while respecting enum constraints.
+
+## ✅ Validate
+
+A validation script is included to **cross-check records between the NDJSON input and the PostgreSQL database**.
+
+It compares fields like `name`, `typeId`, `trackId`, `status`, and `description` for each challenge, and reports:
+- ✅ Valid entries (perfect match)
+- ⚠️ Field mismatches (e.g., `status` normalization issues)
+- ❌ Missing entries in the database
+
+The script uses `readline` for streaming large NDJSON files efficiently, and normalizes `status` values using the same logic as the migration (e.g., converting `Cancelled – Zero Registrations` to `CANCELLED_ZERO_REGISTRATIONS`).
+
+Run with:
+
+```bash
+node scripts/validateChallenges.js ./data/challenge-api.challenge.json
+
+---
 
 ## 📝 Logs
 
