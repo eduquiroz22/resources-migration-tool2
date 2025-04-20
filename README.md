@@ -121,7 +121,37 @@ node src/index.js migrate-all
 | `audit-logs`                  | Implemented, but no data migrated due to missing `challengeId` references  |
 | `challenges`                  | Full challenge migration with all submodels (skills, winners, etc.)        |
 
+All with auto strategy implemented uses `stream-json` (batch) for files larger than 3MB, and `loadJSON` (simple) otherwise.
+
+  > ⚙️ **Why Auto Strategy?**
+>
+> For models that involve large datasets (`member-profiles`, `member-stats`, and `resources`), the tool implements an **automatic selection strategy** based on file size:
+> - If the input file is **larger than 3 MB**, the migration runs in **batch mode using streaming (e.g., `stream-json` or `readline`)** to reduce memory usage.
+> - For **smaller files**, it defaults to **simple in-memory processing** (`loadJSON`) for faster performance.
+>
+> This approach ensures optimal balance between **efficiency** and **stability**, especially when working with hundreds of thousands of records (e.g., over 850,000 for MemberProfile).
+
 ---
+
+  ### 📁 Default Input Files per Migration Step
+  
+  The following files are used by default for each step, unless a custom path is provided via the CLI:
+  
+  | Step                                | Default File Path                                             |
+  |-------------------------------------|----------------------------------------------------------------|
+  | `member-profiles`                  | `./data/MemberProfile_dynamo_data.json`                       |
+  | `member-stats`                     | `./data/MemberStats_dynamo_data.json`                         |
+  | `resource-roles`                   | `./data/ResourceRole_dynamo_data.json`                        |
+  | `resource-role-phase-dependencies` | `./data/ResourceRolePhaseDependency_dynamo_data.json`         |
+  | `resources`                        | `./data/Resource_data.json` ← requires NDJSON format          |
+  | `challenge-types`             | `./data/ChallengeType_dynamo_data.json`                                       |
+  | `challenge-tracks`            | `./data/ChallengeTrack_dynamo_data.json`                                       |
+  | `phases`                      | `./data/Phase_dynamo_data.json`                                         |
+  | `timeline-templates`          | `./data/TimelineTemplate_dynamo_data.json`                                 |
+  | `challenge-timeline-templates`| `./data/ChallengeTimelineTemplate_dynamo_data.json`                                |
+  | `attachments`                 | `./data/Attachment_dynamo_data.json`  |
+  | `audit-logs`                  | `./data/AuditLog_dynamo_data.json`  |
+  | `challenges`                  | `./data/challenge-api.challenge.json`       |
 
 ## 💡 Note on Upserts
 
